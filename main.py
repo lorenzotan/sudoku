@@ -1,97 +1,101 @@
-
-# which number(s) are missing?
-# list should contain numbers 1-9
-
-# return numbers that are missing from the list/row
-# Input: row: list of integers
-# Output: List of integers
+import pprint
+#
+# Return numbers that are missing from the list/row
+#
+# Input: row: List<Int>
+# Output: List<Int>
 def get_missing_values(row):
     complete = (1,2,3,4,5,6,7,8,9)
     return list(filter(lambda x: x not in row, complete))
 
 
-#def check_col(col):
-#    check_row(change_to_row(col))
-
-
-# converts a column to a list
-#def change_to_row(lists):
-#    row = []
-#    row += [ j for i in lists for j in i ]
-#    return row
-
-
-# return row n from puzzle as a list
-# Input: puzzle: 9x9 Integer Matrix
-#        n: Integer
-# Output: List
+#
+# Return row n from puzzle as a List
+#
+# Input: puzzle: 9x9 List Matrix<Int>
+#        n: Row Index<Int>
+# Output: Row n from Puzzle: List<Int>
 def get_row(puzzle, n):
     return puzzle[n]
 
 
-# return column n from puzzle as a list
-# Input: puzzle: 9x9 Integer Matrix
-#        n: Integer
-# Output: List
+#
+# Return column n from puzzle as a List
+#
+# Input: puzzle: 9x9 List Matrix<Int>
+#        n: Column Index<Int>
+# Output: Column n from Puzzle: List<Int>
 def get_column(puzzle, n):
     return [ i[n] for i in puzzle ]
 
 
-# return block n from puzzle as a list
-# sudoku blocks are labeled as:
+#
+# Return block n from puzzle as a List
+# The Sudoku blocks are labeled as:
 # 0, 1, 2
 # 3, 4, 5
 # 6, 7, 8
-# Input: puzzle: 9x9 Integer Matrix
-#        n: Integer
-# Output: List
+#
+# Input: puzzle: 9x9 Matrix <Int>
+#        n: Block Index<Int>
+# Output: Block n from Puzzle: List<Int>
 def get_block(puzzle, n):
-    #print("Block: ", n)
     block = []
     for i in range(9):
         x = (3 * (n // 3)) + (i // 3)
-        y = (i % 3 + (3 * (n % 3)))
+        y = (3 * (n % 3)) + (i % 3)
         block.append(puzzle[x][y])
     
     return block
 
 
-# read in puzzle 
+#
+# Return a List of possible values for an empty unit
+# using a Sudoku row, column and block
+#
+# Input: row: List<Int>
+#        col: List<Int>
+#        block: List<Int>
+# Output: List<Int>
+def find_possible_values(row, col, block):
+    return get_missing_values(set([*row, *col, *block]))
+
+
+#
+# Find all possible answers for each empty unit using
+# the row, column, block associated with the unit.
+# Create a dictionary object using the empty unit coordinate as the key
+# with a list of possible answers as the value.
+# ie. {
+#   (x1, y1): [1, 2, 3]
+#   (x2, y2): [4]
+# }
+#
+# Input: puzzle: 9x9 Integer Matrix
+# Output: answers: Dictionary { Tuple<Int>: List<List> }
+def set_answers(puzzle):
+    answers = {}
+    #pp = pprint.PrettyPrinter(indent=2)
+    for y, row in enumerate(puzzle):
+        for x, val in enumerate(row):
+            if val is None:
+                k = (x, y)
+                block_n = (3 * (y // 3)) + (x // 3)
+                answers[k] = find_possible_values(get_row(puzzle, y),
+                                                  get_column(puzzle, x),
+                                                  get_block(puzzle, block_n))
+
+    #pp.pprint(answers)
+    return answers
+
+# Read in puzzle 
 # build a dictionary of possible answers for all missing unit
-# input: puzzle 9x9 Integer matrix
+#
+# Input: puzzle 9x9 Integer matrix
 def analyze_puzzle():
     pass
 
 
-# read in unit
-# find all possible answers 
-# check row, check col, check block
-def set_answers(puzzle):
-    answers = {}
-    for y, row in enumerate(puzzle):
-        for x, val in enumerate(row):
-            if val is None:
-                k = [x, y]
-                #block_n = 
-                row = get_row(puzzle, y)
-                col = get_column(puzzle, x)
-                block = get_block(puzzle, y)
-                pass
-
-
-# takes 3 lists
-# finds possible values for a given unit
-def find_common_values(row, col, block):
-    missing = [*get_missing_values(row)
-           , *get_missing_values(col) 
-           , *get_missing_values(block)]
-
-    ans = []
-    for i in set(missing):
-        if i is not None and all.count(i) == 3:
-            ans.append(i)
-    
-    return ans
 
 
 if __name__ == '__main__':
@@ -107,22 +111,24 @@ if __name__ == '__main__':
         [91, 92, 93, 94, 95, 96, 97, 98, 99],
     ]
     unsolved = [
-        [3, None, None, 1, None, 7, None, None, None],
-        [7, None, None, None, 9, None, None, None, None],
-        [None, None, 1, None, 8, 6, 7, None, None],
-        [1, None, None, 5, None, None, None, 8, 7],
-        [None, None, 3, None, 4, None, 6, None, None],
-        [8, 6, None, None, None, 2, None, None, 5],
-        [None, None, 2, 4, 3, None, 5, None, None],
-        [None, None, None, None, 1, None, None, None, 2],
-        [None, None, None, 6, None, 9, None, None, 1],
+        [   3, None, None,    1, None,    7, None, None, None],
+        [   7, None, None, None,    9, None, None, None, None],
+        [None, None,    1, None,    8,    6,    7, None, None],
+        [   1, None, None,    5, None, None, None,    8,    7],
+        [None, None,    3, None,    4, None,    6, None, None],
+        [   8,    6, None, None, None,    2, None, None,    5],
+        [None, None,    2,    4,    3, None,    5, None, None],
+        [None, None, None, None,    1, None, None, None,    2],
+        [None, None, None,    6, None,    9, None, None,    1],
     ]
     #print(get_row(unsolved, 0))
     #print(get_column(unsolved, 1))
     #print(get_block(unsolved, 0))
-    vals = find_common_values(get_row(unsolved, 0), \
-                       get_column(unsolved, 1), \
-                       get_block(unsolved, 0))
+    set_answers(unsolved)
+    vals = find_possible_values(get_row(unsolved, 5),
+                              get_column(unsolved, 4),
+                              get_block(unsolved, 4)
+                              )
 
     print(vals)
     #for i in range(9):
