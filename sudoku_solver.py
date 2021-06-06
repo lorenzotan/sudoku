@@ -10,11 +10,11 @@ class SudokuSolver:
         self.puzzle  = puzzle
         self.answers = {}
         self.logging = logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        self.pp      = pprint.PrettyPrinter()
 
 
     def print_puzzle(self):
-        pp = pprint.PrettyPrinter()
-        pp.pprint(self.puzzle)
+        self.pp.pprint(self.puzzle)
 
 
     #
@@ -64,7 +64,6 @@ class SudokuSolver:
 
 
     #
-    #
     # Return numbers that are missing from the list/row
     #
     # Input:  row: List<Int>
@@ -74,7 +73,7 @@ class SudokuSolver:
         return list(filter(lambda x: x not in row, SudokuSolver.complete))
 
 
-    # find answers that occur twice in 2 cells
+    # find answers that occur twice in 2 cells within a block
     # remove those answers from all other cells
     # XXX: Needs Development
     ############################################################################
@@ -143,15 +142,18 @@ class SudokuSolver:
     # the puzzle will solve.
     # But for more difficult puzzles
     # we run into cases where you have to choose between 2 numbers.
+    #
+    # NOTE: if possible answers for a cell is 0
+    # then puzzle is incorrect
     def set_answers(self):
         self.answers = {}
         #pp = pprint.PrettyPrinter(indent=2)
         for x, row in enumerate(self.puzzle):
             for y, val in enumerate(row):
                 if val is None:
-                    k = (x, y)
+                    coord = (x, y)
                     block_n = (3 * (x // 3)) + (y // 3)
-                    self.answers[k] = self.find_possible_values(self.get_row(x),
+                    self.answers[coord] = self.find_possible_values(self.get_row(x),
                                                            self.get_column(y),
                                                            self.get_block(block_n))
 
@@ -159,29 +161,6 @@ class SudokuSolver:
         # within the block and find single occurance answers
         for i in range(9):
             self.find_single_occurences(i)
-
-
-    #
-    # Read in puzzle
-    #
-    # Input:  puzzle 9x9 Matrix<Int>
-    # Output: puzzle 9x9 Matrix<Int>
-    def solve(self):
-        while(not self.is_solved()):
-            self.set_answers()
-            # ans[0] is the key of self.answers
-            # ans[1] is the value of self.answers
-            known = dict( filter(lambda ans: len(ans[1]) == 1, self.answers.items()) )
-            #undecided = dict( filter(lambda ans: len(ans[1]) == 2, self.answers.items()) )
-            #wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
-            if len(known.keys()) == 0:
-                return self.puzzle
-
-            for coord, vals in known.items():
-                self.puzzle[coord[0]][coord[1]] = vals[0]
-
-        # XXX needed?
-        return self.puzzle
 
 
     #
@@ -198,6 +177,30 @@ class SudokuSolver:
 
         self.logging("Puzzle Solved!")
         return True
+
+
+    #
+    # Solves the sudoku puzzle
+    #
+    # Input:  puzzle 9x9 Matrix<Int>
+    # Output: puzzle 9x9 Matrix<Int>
+    def solve(self):
+        while(not self.is_solved()):
+            self.set_answers()
+            # ans[0] is the key of self.answers
+            # ans[1] is the value of self.answers
+            known = dict( filter(lambda ans: len(ans[1]) == 1, self.answers.items()) )
+            #undecided = dict( filter(lambda ans: len(ans[1]) == 2, self.answers.items()) )
+            #wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
+            if len(known.keys()) == 0:
+                self.logging("I'm stuck!")
+                return self.puzzle
+
+            for coord, vals in known.items():
+                self.puzzle[coord[0]][coord[1]] = vals[0]
+
+        # XXX needed?
+        return self.puzzle
 
 
 
@@ -253,11 +256,6 @@ if __name__ == '__main__':
     #]
     # Level: Evil
     # Cannot solve
-    # XXX test what happens when you put in wrong answers
-    # need to figure out how to determine which number to choose
-    # when left with 2 possible answers
-    # NOTE: if possible answers for a cell is 0
-    # then puzzle is incorrect
     unsolved = [
         [None, None,    3, None, None, None, None, None,    6],
         [   2,    8, None, None, None,    6, None, None,    3],
@@ -283,7 +281,6 @@ if __name__ == '__main__':
 
 
     pp = pprint.PrettyPrinter(indent=2)
-#    pp.pprint(unsolved)
 
     solver = SudokuSolver(unsolved)
     solver.print_puzzle()
@@ -292,21 +289,5 @@ if __name__ == '__main__':
     solver.set_answers()
     pp.pprint(solver.answers)
     #solver.find_single_occurences(8)
-    #print(solver.answers())
 
-#    for i in solver.get_block_coords(0):
-#        print(i[0])
-#        print(i[1])
-    #ans = solver.set_answers()
-    #possible_ans8 = solver.get_all_block_answers(ans, 8)
-    #print(sorted(possible_ans8))
-
-    #pp.pprint(solver.solve())
-
-    #for i in range(2):
-    #    answers = set_answers(unsolved)
-    #    for coord, vals in answers.items():
-    #        if len(vals) == 1:
-    #            unsolved[coord[1]][coord[0]] = vals[0]
-
-    #pp.pprint(solve(unsolved))
+    pp.pprint(solver.solve())
