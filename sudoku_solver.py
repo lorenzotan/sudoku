@@ -9,8 +9,10 @@ class SudokuSolver:
         # instance attribute
         self.puzzle  = puzzle
         self.answers = {}
-        self.logging = logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
         self.pp      = pprint.PrettyPrinter()
+
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        self.log     = logging.getLogger('Sudoku Logger')
 
 
     def print_puzzle(self):
@@ -51,8 +53,11 @@ class SudokuSolver:
         return [ self.puzzle[c[0]][c[1]] for c in self.get_block_coords(n) ]
 
 
-    # Return block coordinates
-    # or better to pre define it???
+    #
+    # Return a list of block coordinates
+    #
+    # Input:  n (Block): Index<Int>
+    # Output: coords (list of coordinates): List<Tuple>
     def get_block_coords(self, n):
         coords = []
         for i in range(9):
@@ -68,7 +73,7 @@ class SudokuSolver:
     #
     # Input:  row: List<Int>
     # Output: List<Int>
-    # TODO: check if there are duplicates in row
+    # TODO: add error checking. check if there are duplicates in incoming row.
     def get_missing_values(self, row):
         return list(filter(lambda x: x not in row, SudokuSolver.complete))
 
@@ -81,16 +86,24 @@ class SudokuSolver:
         pass
 
 
-    # find answers in a block that only occur twice
+    # find answers in a block (blk) that only occur (n) times
     # XXX: Needs Development
     ############################################################################
-    def find_reducded_answers(self):
-        pass
+    def find_reducded_answers(self, blk, n):
+        foo = []
+        for i in self.get_block_coords(blk):
+            if i in self.answers.keys():
+                foo.extend(self.answers[i])
+
+        self.pp.pprint(foo)
+        bar = list( filter(lambda ans: foo.count(ans) == n, foo) )
+        self.pp.pprint(bar)
 
 
     #
-    # Return all possible answers for each cell in a block
-    # TODO refactor
+    # Return all possible answers for each cell in a block n
+    #
+    # Input: n: Block Index <Int>
     def find_single_occurences(self, n):
         block_ans = []
         for coord in self.get_block_coords(n):
@@ -175,7 +188,7 @@ class SudokuSolver:
             if None in row:
                 return False
 
-        self.logging("Puzzle Solved!")
+        self.log.info("Puzzle Solved!")
         return True
 
 
@@ -193,7 +206,7 @@ class SudokuSolver:
             #undecided = dict( filter(lambda ans: len(ans[1]) == 2, self.answers.items()) )
             #wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
             if len(known.keys()) == 0:
-                self.logging("I'm stuck!")
+                self.log.warning("I'm stuck!")
                 return self.puzzle
 
             for coord, vals in known.items():
@@ -290,4 +303,6 @@ if __name__ == '__main__':
     pp.pprint(solver.answers)
     #solver.find_single_occurences(8)
 
+    solver.find_reducded_answers(6, 2)
+    #solver.print_puzzle()
     pp.pprint(solver.solve())
