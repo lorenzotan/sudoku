@@ -1,129 +1,203 @@
+import logging
 import pprint
-#
-# Return numbers that are missing from the list/row
-#
-# Input:  row: List<Int>
-# Output: List<Int>
-def get_missing_values(row):
+
+class SudokuSolver:
+    # class attribute
     complete = (1,2,3,4,5,6,7,8,9)
-    return list(filter(lambda x: x not in row, complete))
+
+    def __init__(self, puzzle=None):
+        # instance attribute
+        self.puzzle  = puzzle
+        self.answers = {}
+        self.logging = logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 
-#
-# Return row n from puzzle as a List
-#
-# Input:  puzzle: 9x9 List Matrix<Int>
-#         n:      Row Index<Int>
-# Output: Row n from Puzzle: List<Int>
-def get_row(puzzle, n):
-    return puzzle[n]
+    def print_puzzle(self):
+        pp = pprint.PrettyPrinter()
+        pp.pprint(self.puzzle)
 
 
-#
-# Return column n from puzzle as a List
-#
-# Input:  puzzle: 9x9 List Matrix<Int>
-#         n:      Column Index<Int>
-# Output: Column n from Puzzle: List<Int>
-def get_column(puzzle, n):
-    return [ i[n] for i in puzzle ]
+    #
+    # Return row n from puzzle as a List
+    #
+    # Input:  puzzle: 9x9 List Matrix<Int>
+    #         n:      Row Index<Int>
+    # Output: Row n from Puzzle: List<Int>
+    def get_row(self, n):
+        return self.puzzle[n]
 
 
-#
-# Return block n from puzzle as a List
-# The Sudoku block indices are labeled as:
-# 0, 1, 2
-# 3, 4, 5
-# 6, 7, 8
-#
-# Input:  puzzle: 9x9 Matrix <Int>
-#         n:      Block Index<Int>
-# Output: Block n from Puzzle: List<Int>
-def get_block(puzzle, n):
-    block = []
-    for i in range(9):
-        x = (3 * (n // 3)) + (i // 3)
-        y = (3 * (n % 3)) + (i % 3)
-        block.append(puzzle[x][y])
-    
-    return block
+    #
+    # Return column n from puzzle as a List
+    #
+    # Input:  puzzle: 9x9 List Matrix<Int>
+    #         n:      Column Index<Int>
+    # Output: Column n from Puzzle: List<Int>
+    def get_column(self, n):
+        return [ i[n] for i in self.puzzle ]
 
 
-#
-# Return a List of possible values for an empty unit
-# using a Sudoku row, column and block
-#
-# Input:  row:   List<Int>
-#         col:   List<Int>
-#         block: List<Int>
-# Output: List<Int>
-def find_possible_values(row, col, block):
-    return get_missing_values(set([*row, *col, *block]))
+    #
+    # Return block n from puzzle as a List
+    # The Sudoku block indices are labeled as:
+    # 0, 1, 2
+    # 3, 4, 5
+    # 6, 7, 8
+    #
+    # Input:  puzzle: 9x9 Matrix <Int>
+    #         n:      Block Index<Int>
+    # Output: Block n from Puzzle: List<Int>
+    def get_block(self, n):
+        return [ self.puzzle[c[0]][c[1]] for c in self.get_block_coords(n) ]
 
 
-#
-# Find all possible answers for each empty unit using
-# the row, column, block associated with the unit.
-# Create a dictionary object using the empty unit coordinate as the key
-# with a list of possible answers as the value.
-# ie. {
-#   (x1, y1): [1, 2, 3]
-#   (x2, y2): [4]
-# }
-#
-# Input:  puzzle:  9x9 Integer Matrix
-# Output: answers: Dictionary { Tuple<Int>: List<List> }
-#
-# XXX
-# This current solution works well for easier puzzles.
-# As long as there is 1 definitive number for an empty unit
-# the puzzle will solve.
-# But for more difficult puzzles
-# we run into cases where you have to choose between 2 numbers.
-def set_answers(puzzle):
-    answers = {}
-    #pp = pprint.PrettyPrinter(indent=2)
-    for r, row in enumerate(puzzle):
-        for x, val in enumerate(row):
-            if val is None:
-                k = (r, x)
-                block_n = (3 * (r // 3)) + (x // 3)
-                answers[k] = find_possible_values(get_row(puzzle, r),
-                                                  get_column(puzzle, x),
-                                                  get_block(puzzle, block_n))
+    # Return block coordinates
+    # or better to pre define it???
+    def get_block_coords(self, n):
+        coords = []
+        for i in range(9):
+            x = (3 * (n // 3)) + (i // 3)   # row
+            y = (3 * (n % 3)) + (i % 3)     # column
+            coords.append((x, y))
 
-    #pp.pprint(answers)
-    return answers
+        return coords
 
 
-#
-# Read in puzzle 
-#
-# Input:  puzzle 9x9 Matrix<Int>
-# Output: puzzle 9x9 Matrix<Int>
-def solve(puzzle):
-    while(not is_solved(puzzle)):
-        answers = set_answers(puzzle)
-        known = dict( filter(lambda ans: len(ans[1]) == 1, answers.items()) )
-        for coord, vals in known.items():
-            puzzle[coord[0]][coord[1]] = vals[0]
-        #for coord, vals in answers.items():
-        #    if len(vals) == 1:
-        #        puzzle[coord[0]][coord[1]] = vals[0]
-
-    return puzzle
+    #
+    #
+    # Return numbers that are missing from the list/row
+    #
+    # Input:  row: List<Int>
+    # Output: List<Int>
+    # TODO: check if there are duplicates in row
+    def get_missing_values(self, row):
+        return list(filter(lambda x: x not in row, SudokuSolver.complete))
 
 
-#
-# Read in puzzle
-#
-# Input:  puzzle 9x9 Matrix<Int>
-# Output: <Boolean>
-def is_solved(puzzle):
-    for row in puzzle:
-        if None in row:
-            return False
-    return True
+    # find answers that occur twice in 2 cells
+    # remove those answers from all other cells
+    # XXX: Needs Development
+    ############################################################################
+    def remove_answers(self):
+        pass
+
+
+    # find answers in a block that only occur twice
+    # XXX: Needs Development
+    ############################################################################
+    def find_reducded_answers(self):
+        pass
+
+
+    #
+    # Return all possible answers for each cell in a block
+    # TODO refactor
+    def find_single_occurences(self, n):
+        block_ans = []
+        for coord in self.get_block_coords(n):
+            if coord in self.answers.keys():
+                block_ans.extend(self.answers[coord])
+
+        # look for single occurance values
+        # in block_ans
+        definite_ans = []
+        for i in set(block_ans):
+            if block_ans.count(i) == 1:
+                definite_ans.append(i)
+
+        # apply all single occurance values
+        # in their corresponding cells
+        for ans in definite_ans:
+            for coord in self.get_block_coords(n):
+                if coord in self.answers.keys() and ans in self.answers[coord]:
+                    self.answers[coord] = [ans]
+
+
+    # Return a List of possible values for an empty unit
+    # using a Sudoku row, column and block
+    #
+    # Input:  row:   List<Int>
+    #         col:   List<Int>
+    #         block: List<Int>
+    # Output: List<Int>
+    def find_possible_values(self, row, col, block):
+        return self.get_missing_values(set([*row, *col, *block]))
+
+
+    #
+    # Find all possible answers for each empty unit using
+    # the row, column, block associated with the unit.
+    # Create a dictionary object using the empty unit coordinate as the key
+    # with a list of possible answers as the value.
+    # ie. {
+    #   (x1, y1): [1, 2, 3]
+    #   (x2, y2): [4]
+    # }
+    #
+    # Input:  puzzle:  9x9 Integer Matrix
+    # Output: answers: Dictionary { Tuple<Int>: List<List> }
+    #
+    # XXX
+    # This current solution works well for easier puzzles.
+    # As long as there is 1 definitive number for an empty unit
+    # the puzzle will solve.
+    # But for more difficult puzzles
+    # we run into cases where you have to choose between 2 numbers.
+    def set_answers(self):
+        self.answers = {}
+        #pp = pprint.PrettyPrinter(indent=2)
+        for x, row in enumerate(self.puzzle):
+            for y, val in enumerate(row):
+                if val is None:
+                    k = (x, y)
+                    block_n = (3 * (x // 3)) + (y // 3)
+                    self.answers[k] = self.find_possible_values(self.get_row(x),
+                                                           self.get_column(y),
+                                                           self.get_block(block_n))
+
+        # read each block, look at all the potential answers
+        # within the block and find single occurance answers
+        for i in range(9):
+            self.find_single_occurences(i)
+
+
+    #
+    # Read in puzzle
+    #
+    # Input:  puzzle 9x9 Matrix<Int>
+    # Output: puzzle 9x9 Matrix<Int>
+    def solve(self):
+        while(not self.is_solved()):
+            self.set_answers()
+            # ans[0] is the key of self.answers
+            # ans[1] is the value of self.answers
+            known = dict( filter(lambda ans: len(ans[1]) == 1, self.answers.items()) )
+            #undecided = dict( filter(lambda ans: len(ans[1]) == 2, self.answers.items()) )
+            #wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
+            if len(known.keys()) == 0:
+                return self.puzzle
+
+            for coord, vals in known.items():
+                self.puzzle[coord[0]][coord[1]] = vals[0]
+
+        # XXX needed?
+        return self.puzzle
+
+
+    #
+    # Read in puzzle
+    #
+    # Input:  puzzle 9x9 Matrix<Int>
+    # Output: <Boolean>
+    # XXX rename this. it checks if there are anymore
+    # blank spaces
+    def is_solved(self):
+        for row in self.puzzle:
+            if None in row:
+                return False
+
+        self.logging("Puzzle Solved!")
+        return True
 
 
 
@@ -179,6 +253,11 @@ if __name__ == '__main__':
     #]
     # Level: Evil
     # Cannot solve
+    # XXX test what happens when you put in wrong answers
+    # need to figure out how to determine which number to choose
+    # when left with 2 possible answers
+    # NOTE: if possible answers for a cell is 0
+    # then puzzle is incorrect
     unsolved = [
         [None, None,    3, None, None, None, None, None,    6],
         [   2,    8, None, None, None,    6, None, None,    3],
@@ -190,11 +269,40 @@ if __name__ == '__main__':
         [   3, None, None,    6, None, None, None,    5,    9],
         [   1, None, None, None, None, None,    8, None, None]
     ]
+    #unsolved = [
+    #    [None,    9,    3, None, None, None, None, None,    6],
+    #    [   2,    8, None,    5, None,    6, None, None,    3],
+    #    [None, None,    6,    9, None, None, None,    1, None],
+    #    [None, None, None,    4, None,    2, None, None, None],
+    #    [None,    7,    9, None, None, None,    1,    3, None],
+    #    [None, None, None,    7, None,    9, None, None, None],
+    #    [None,    5,    4, None, None,    7,    3, None, None],
+    #    [   3, None, None,    6, None, None, None,    5,    9],
+    #    [   1, None, None, None, None, None,    8, None, None]
+    #]
 
 
     pp = pprint.PrettyPrinter(indent=2)
-    pp.pprint(unsolved)
-    pp.pprint(solve(unsolved))
+#    pp.pprint(unsolved)
+
+    solver = SudokuSolver(unsolved)
+    solver.print_puzzle()
+
+    #print(solver.get_block(4))
+    solver.set_answers()
+    pp.pprint(solver.answers)
+    #solver.find_single_occurences(8)
+    #print(solver.answers())
+
+#    for i in solver.get_block_coords(0):
+#        print(i[0])
+#        print(i[1])
+    #ans = solver.set_answers()
+    #possible_ans8 = solver.get_all_block_answers(ans, 8)
+    #print(sorted(possible_ans8))
+
+    #pp.pprint(solver.solve())
+
     #for i in range(2):
     #    answers = set_answers(unsolved)
     #    for coord, vals in answers.items():
