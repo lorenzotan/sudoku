@@ -11,8 +11,9 @@ class SudokuSolver:
         self.answers = {}
         self.pp      = pprint.PrettyPrinter()
 
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-        self.log     = logging.getLogger('Sudoku Logger')
+        logging.basicConfig(format='%(levelname)s: %(message)s',
+                            level=logging.DEBUG)
+        self.log = logging.getLogger('Sudoku Logger')
 
 
     def print_puzzle(self):
@@ -89,15 +90,39 @@ class SudokuSolver:
     # find answers in a block (blk) that only occur (n) times
     # XXX: Needs Development
     ############################################################################
-    def find_reducded_answers(self, blk, n):
+    def find_reduced_answers(self, blk, n):
         foo = []
+        ans = []
+        ans2 = {}
+        ans3 = {}
+
+        # this is a list of the coordinated in block blk
+        coords = list( filter(lambda i: i in self.answers.keys(),
+                           self.get_block_coords(blk)) )
+
+        # get all the possible answers in each empty cell
         for i in self.get_block_coords(blk):
             if i in self.answers.keys():
-                foo.extend(self.answers[i])
+                #foo.extend(self.answers[i])
+                for j in self.answers[i]:
+                    if j in ans2.keys():
+                        ans2[j].append(i)
+                    else:
+                        ans2[j] = [i]
 
-        self.pp.pprint(foo)
-        bar = list( filter(lambda ans: foo.count(ans) == n, foo) )
-        self.pp.pprint(bar)
+        self.pp.pprint(ans2)
+        for val, coords in ans2.items():
+            if len(coords) == n:
+                print(val)
+                ans3[val] = coords
+            #    del ans2[key]
+                #ans.append(i)
+
+
+        self.pp.pprint(ans3)
+        #self.pp.pprint(bar)
+        #bar = list( filter(lambda ans: foo.count(ans) == n, foo) )
+        #self.pp.pprint(bar)
 
 
     #
@@ -119,12 +144,14 @@ class SudokuSolver:
 
         # apply all single occurance values
         # in their corresponding cells
+        #for ans in self.find_reducded_answers(n, 1):
         for ans in definite_ans:
             for coord in self.get_block_coords(n):
                 if coord in self.answers.keys() and ans in self.answers[coord]:
                     self.answers[coord] = [ans]
 
 
+    #
     # Return a List of possible values for an empty unit
     # using a Sudoku row, column and block
     #
@@ -202,18 +229,22 @@ class SudokuSolver:
             self.set_answers()
             # ans[0] is the key of self.answers
             # ans[1] is the value of self.answers
-            known = dict( filter(lambda ans: len(ans[1]) == 1, self.answers.items()) )
+            known = dict( filter(lambda ans: len(ans[1]) == 1,
+                                 self.answers.items()) )
             #undecided = dict( filter(lambda ans: len(ans[1]) == 2, self.answers.items()) )
             #wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
             if len(known.keys()) == 0:
                 self.log.warning("I'm stuck!")
+                self.pp.pprint(self.answers)
+                print("\n")
+                # XXX TEST
+                self.find_reduced_answers(5, 2)
+                print("\n")
                 return self.puzzle
 
             for coord, vals in known.items():
                 self.puzzle[coord[0]][coord[1]] = vals[0]
 
-        # XXX needed?
-        return self.puzzle
 
 
 
@@ -269,28 +300,29 @@ if __name__ == '__main__':
     #]
     # Level: Evil
     # Cannot solve
-    unsolved = [
-        [None, None,    3, None, None, None, None, None,    6],
-        [   2,    8, None, None, None,    6, None, None,    3],
-        [None, None,    6,    9, None, None, None,    1, None],
-        [None, None, None,    4, None,    2, None, None, None],
-        [None,    7,    9, None, None, None,    1,    3, None],
-        [None, None, None,    7, None,    9, None, None, None],
-        [None,    5, None, None, None,    7,    3, None, None],
-        [   3, None, None,    6, None, None, None,    5,    9],
-        [   1, None, None, None, None, None,    8, None, None]
-    ]
     #unsolved = [
-    #    [None,    9,    3, None, None, None, None, None,    6],
-    #    [   2,    8, None,    5, None,    6, None, None,    3],
+    #    [None, None,    3, None, None, None, None, None,    6],
+    #    [   2,    8, None, None, None,    6, None, None,    3],
     #    [None, None,    6,    9, None, None, None,    1, None],
     #    [None, None, None,    4, None,    2, None, None, None],
     #    [None,    7,    9, None, None, None,    1,    3, None],
     #    [None, None, None,    7, None,    9, None, None, None],
-    #    [None,    5,    4, None, None,    7,    3, None, None],
+    #    [None,    5, None, None, None,    7,    3, None, None],
     #    [   3, None, None,    6, None, None, None,    5,    9],
     #    [   1, None, None, None, None, None,    8, None, None]
     #]
+    # Level: Intermediate (From DS)
+    unsolved = [
+        [   4, None, None, None, None, None, None,    1,    8],
+        [None, None, None,    1, None, None, None, None,    3],
+        [None, None,    2,    4,    6, None, None, None, None],
+        [None,    3,    5,    7, None, None, None, None, None],
+        [None, None,    8, None, None, None,    6, None, None],
+        [None, None, None, None, None,    4,    8,    2, None],
+        [None, None, None, None,    1,    5,    7, None, None],
+        [   6, None, None, None, None,    3, None, None, None],
+        [   7,    5, None, None, None, None, None, None,    2]
+    ]
 
 
     pp = pprint.PrettyPrinter(indent=2)
@@ -299,10 +331,11 @@ if __name__ == '__main__':
     solver.print_puzzle()
 
     #print(solver.get_block(4))
-    solver.set_answers()
-    pp.pprint(solver.answers)
+    #solver.set_answers()
+    #pp.pprint(solver.answers)
     #solver.find_single_occurences(8)
 
-    solver.find_reducded_answers(6, 2)
-    #solver.print_puzzle()
-    pp.pprint(solver.solve())
+    #solver.find_reduced_answers(6, 2)
+    ###solver.print_puzzle()
+    solver.solve()
+    solver.print_puzzle()
