@@ -16,6 +16,9 @@ class SudokuSolver:
         self.log = logging.getLogger('Sudoku Logger')
 
 
+    #
+    # Pretty print sudoku puzzle
+    #
     def print_puzzle(self):
         self.pp.pprint(self.puzzle)
 
@@ -37,7 +40,7 @@ class SudokuSolver:
     #         n:      Column Index<Int>
     # Output: Column n from Puzzle: List<Int>
     def get_column(self, n):
-        return [ i[n] for i in self.puzzle ]
+        return [i[n] for i in self.puzzle]
 
 
     #
@@ -51,7 +54,7 @@ class SudokuSolver:
     #         n:      Block Index<Int>
     # Output: Block n from Puzzle: List<Int>
     def get_block(self, n):
-        return [ self.puzzle[c[0]][c[1]] for c in self.get_block_coords(n) ]
+        return [self.puzzle[c[0]][c[1]] for c in self.get_block_coords(n)]
 
 
     #
@@ -79,48 +82,124 @@ class SudokuSolver:
         return list(filter(lambda x: x not in row, SudokuSolver.complete))
 
 
+    #
+    # Return a List of possible values for an empty cell
+    # using a Sudoku row, column and block
+    #
+    # Input:  row:   List<Int>
+    #         col:   List<Int>
+    #         block: List<Int>
+    # Output: List<Int>
+    def get_cell_values(self, row, col, block):
+        return self.get_missing_values(set([*row, *col, *block]))
+
+
     # find answers that occur twice in 2 cells within a block
     # remove those answers from all other cells
     # XXX: Needs Development
     ############################################################################
-    def remove_answers(self):
-        pass
+    def del_value_options(self):
+        for i in range(9):
+            #print("Block:", i)
+            vals = self.get_occurences(i, 2)
+
+            # find row/col in block
+
+            # get coordinates from self.answers
+            # that are on same row/col
+            # if coord in self.answers is not
+            # in vals then remove the value from coord
+
+            #self.pp.pprint(vals)
+            for f_val, f_coord in vals.items():
+                # get row x to analyze
+                x = list(set(i[0] for i in f_coord))
+                # get column y to analyze
+                y = list(set(i[1] for i in f_coord))
+
+                # this will check how many rows f_val might be on
+                # we're only interested when value f_val is found on 1 row
+                if len(x) == 1:
+                    #print("We need to remove {val} from row {x}".format(val=f_val, x=x))
+
+                    empty_row_coords = set(self.get_row_coords(x[0]))
+                    #print("COORDS in row {x}: {c}".format(x=x[0], c=empty_row_coords))
+                    coords = empty_row_coords.difference(set(f_coord))
+                    #print("COORDS TO CHECK", coords)
+
+                    for coord in coords:
+                        if f_val in self.answers[coord]:
+                            #print("Checking coord:", coord)
+                            self.answers[coord].remove(f_val)
+                            self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
+
+                elif len(y) == 1:
+                    #print("We need to remove {val} from column {y}".format(val=f_val, y=y))
+                    empty_col_coords = set(self.get_col_coords(y[0]))
+                    #print("COORDS in col {y}: {c}".format(y=y[0], c=empty_col_coords))
+                    coords = empty_col_coords.difference(set(f_coord))
+                    #print("COORDS TO CHECK", coords)
+                    for coord in coords:
+                        if f_val in self.answers[coord]:
+                            #print("Checking coord:", coord)
+                            self.answers[coord].remove(f_val)
+                            self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
+
+        print("\n")
+
+
+    def get_row_coords(self, n):
+        return {coord : vals for coord, vals in self.answers.items() if coord[0] == n}
+
+
+    def get_col_coords(self, n):
+        return [coord for coord in self.answers.keys() if coord[1] == n]
 
 
     # find answers in a block (blk) that only occur (n) times
     # XXX: Needs Development
     ############################################################################
-    def find_reduced_answers(self, blk, n):
-        foo = []
-        ans = []
-        ans2 = {}
-        ans3 = {}
+    def get_occurences(self, blk, n):
+        ans = {}
+        filtered2 = {}
 
-        # this is a list of the coordinated in block blk
-        coords = list( filter(lambda i: i in self.answers.keys(),
-                           self.get_block_coords(blk)) )
+        # coordinates of unsolved cells in block blk
+        coords = list(filter(lambda i: i in self.answers.keys(),
+                           self.get_block_coords(blk)))
 
-        # get all the possible answers in each empty cell
-        for i in self.get_block_coords(blk):
-            if i in self.answers.keys():
-                #foo.extend(self.answers[i])
-                for j in self.answers[i]:
-                    if j in ans2.keys():
-                        ans2[j].append(i)
-                    else:
-                        ans2[j] = [i]
+        for coord in coords:
+            for val in self.answers[coord]:
+                if val in ans.keys():
+                    ans[val].append(coord)
+                else:
+                    ans[val] = [coord]
 
-        self.pp.pprint(ans2)
-        for val, coords in ans2.items():
-            if len(coords) == n:
-                print(val)
-                ans3[val] = coords
-            #    del ans2[key]
-                #ans.append(i)
+        filtered = dict(filter(lambda val: len(val[1]) == n,
+                    ans.items()))
 
+        # we only care about values that exist on the same row/col
+        for val, coord in filtered.items():
+            x = set(list(i[0] for i in coord))
+            y = set(list(i[1] for i in coord))
+            if len(x) == 1 or len(y) == 1:
+                filtered2[val] = coord
 
-        self.pp.pprint(ans3)
-        #self.pp.pprint(bar)
+        return filtered2
+
+        # flatten with nested list comprehension?
+        # https://stackoverflow.com/questions/3899645/list-extend-and-list-comprehension
+        # NOTE only values that are on the same row/col are relevant
+        #filtered_coords = []
+        #for coord in filtered.values():
+        #    filtered_coords.extend(coord)
+
+        #result = {}
+        #for coord in set(filtered_coords):
+        #    result[coord] = self.answers[coord]
+
+        #self.pp.pprint(result)
+
+        #self.pp.pprint(ans3)
         #bar = list( filter(lambda ans: foo.count(ans) == n, foo) )
         #self.pp.pprint(bar)
 
@@ -142,9 +221,12 @@ class SudokuSolver:
             if block_ans.count(i) == 1:
                 definite_ans.append(i)
 
+        #for i in range(9):
+        #    self.get_occurences(i, 1)
+
         # apply all single occurance values
         # in their corresponding cells
-        #for ans in self.find_reducded_answers(n, 1):
+        # for ans in self.get_occurences(n, 1):
         for ans in definite_ans:
             for coord in self.get_block_coords(n):
                 if coord in self.answers.keys() and ans in self.answers[coord]:
@@ -152,21 +234,9 @@ class SudokuSolver:
 
 
     #
-    # Return a List of possible values for an empty unit
-    # using a Sudoku row, column and block
-    #
-    # Input:  row:   List<Int>
-    #         col:   List<Int>
-    #         block: List<Int>
-    # Output: List<Int>
-    def find_possible_values(self, row, col, block):
-        return self.get_missing_values(set([*row, *col, *block]))
-
-
-    #
-    # Find all possible answers for each empty unit using
-    # the row, column, block associated with the unit.
-    # Create a dictionary object using the empty unit coordinate as the key
+    # Find all possible answers for each empty cell using
+    # the row, column, block associated with the cell.
+    # Create a dictionary object using the empty cell coordinate as the key
     # with a list of possible answers as the value.
     # ie. {
     #   (x1, y1): [1, 2, 3]
@@ -176,26 +246,26 @@ class SudokuSolver:
     # Input:  puzzle:  9x9 Integer Matrix
     # Output: answers: Dictionary { Tuple<Int>: List<List> }
     #
-    # XXX
-    # This current solution works well for easier puzzles.
-    # As long as there is 1 definitive number for an empty unit
-    # the puzzle will solve.
-    # But for more difficult puzzles
-    # we run into cases where you have to choose between 2 numbers.
-    #
     # NOTE: if possible answers for a cell is 0
     # then puzzle is incorrect
     def set_answers(self):
         self.answers = {}
-        #pp = pprint.PrettyPrinter(indent=2)
+
         for x, row in enumerate(self.puzzle):
             for y, val in enumerate(row):
                 if val is None:
                     coord = (x, y)
                     block_n = (3 * (x // 3)) + (y // 3)
-                    self.answers[coord] = self.find_possible_values(self.get_row(x),
+                    self.answers[coord] = self.get_cell_values(self.get_row(x),
                                                            self.get_column(y),
                                                            self.get_block(block_n))
+
+        # narrow down answers in the cells
+        # find cells within a block that only occur twice
+        # if an answer is only possible on the same row/col
+        # within the block, eliminate the possibility that it
+        # occurs on a different block on the same row/col
+        self.del_value_options()
 
         # read each block, look at all the potential answers
         # within the block and find single occurance answers
@@ -231,16 +301,17 @@ class SudokuSolver:
             # ans[1] is the value of self.answers
             known = dict( filter(lambda ans: len(ans[1]) == 1,
                                  self.answers.items()) )
-            #undecided = dict( filter(lambda ans: len(ans[1]) == 2, self.answers.items()) )
-            #wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
-            if len(known.keys()) == 0:
-                self.log.warning("I'm stuck!")
+            wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
+            if len(wrong.keys()) > 0:
+                self.log.error("We made a mistake!")
+                self.pp.pprint(self.answers)
+                return
+            elif len(known.keys()) == 0:
                 self.pp.pprint(self.answers)
                 print("\n")
-                # XXX TEST
-                self.find_reduced_answers(5, 2)
-                print("\n")
-                return self.puzzle
+                self.log.warning("I'm stuck!")
+
+                return
 
             for coord, vals in known.items():
                 self.puzzle[coord[0]][coord[1]] = vals[0]
@@ -300,29 +371,30 @@ if __name__ == '__main__':
     #]
     # Level: Evil
     # Cannot solve
-    #unsolved = [
-    #    [None, None,    3, None, None, None, None, None,    6],
-    #    [   2,    8, None, None, None,    6, None, None,    3],
-    #    [None, None,    6,    9, None, None, None,    1, None],
-    #    [None, None, None,    4, None,    2, None, None, None],
-    #    [None,    7,    9, None, None, None,    1,    3, None],
-    #    [None, None, None,    7, None,    9, None, None, None],
-    #    [None,    5, None, None, None,    7,    3, None, None],
-    #    [   3, None, None,    6, None, None, None,    5,    9],
-    #    [   1, None, None, None, None, None,    8, None, None]
-    #]
-    # Level: Intermediate (From DS)
     unsolved = [
-        [   4, None, None, None, None, None, None,    1,    8],
-        [None, None, None,    1, None, None, None, None,    3],
-        [None, None,    2,    4,    6, None, None, None, None],
-        [None,    3,    5,    7, None, None, None, None, None],
-        [None, None,    8, None, None, None,    6, None, None],
-        [None, None, None, None, None,    4,    8,    2, None],
-        [None, None, None, None,    1,    5,    7, None, None],
-        [   6, None, None, None, None,    3, None, None, None],
-        [   7,    5, None, None, None, None, None, None,    2]
+        [None, None,    3, None, None, None, None, None,    6],
+        [   2,    8, None, None, None,    6, None, None,    3],
+        [None, None,    6,    9, None, None, None,    1, None],
+        [None, None, None,    4, None,    2, None, None, None],
+        [None,    7,    9, None, None, None,    1,    3, None],
+        [None, None, None,    7, None,    9, None, None, None],
+        [None,    5, None, None, None,    7,    3, None, None],
+        [   3, None, None,    6, None, None, None,    5,    9],
+        [   1, None, None, None, None, None,    8, None, None]
     ]
+    # Level: Intermediate (From DS)
+    # Solved!
+    #unsolved = [
+    #    [   4, None, None, None, None, None, None,    1,    8],
+    #    [None, None, None,    1, None, None, None, None,    3],
+    #    [None, None,    2,    4,    6, None, None, None, None],
+    #    [None,    3,    5,    7, None, None, None, None, None],
+    #    [None, None,    8, None, None, None,    6, None, None],
+    #    [None, None, None, None, None,    4,    8,    2, None],
+    #    [None, None, None, None,    1,    5,    7, None, None],
+    #    [   6, None, None, None, None,    3, None, None, None],
+    #    [   7,    5, None, None, None, None, None, None,    2]
+    #]
 
 
     pp = pprint.PrettyPrinter(indent=2)
@@ -330,12 +402,7 @@ if __name__ == '__main__':
     solver = SudokuSolver(unsolved)
     solver.print_puzzle()
 
-    #print(solver.get_block(4))
-    #solver.set_answers()
-    #pp.pprint(solver.answers)
-    #solver.find_single_occurences(8)
-
-    #solver.find_reduced_answers(6, 2)
-    ###solver.print_puzzle()
     solver.solve()
     solver.print_puzzle()
+    #pp.pprint(solver.get_row_coords(1))
+    #solver.get_col_coords(3)
