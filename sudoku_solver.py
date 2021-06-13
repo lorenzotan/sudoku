@@ -1,5 +1,7 @@
 import logging
 import pprint
+import re
+from itertools import chain
 
 class SudokuSolver:
     # class attribute
@@ -94,58 +96,85 @@ class SudokuSolver:
         return self.get_missing_values(set([*row, *col, *block]))
 
 
+    # find answers that occur twice within a block
+    # if there are 2 that have 2 of the same coordinates
+    # eliminate all other possible answers
+    def get_definite_values(self):
+        # we are scanning each block for
+        # 2 numbers that have been narrowed down to the same
+        # 2 empty cells
+        for blk in range(9):
+            print("BLOCK", blk)
+            # XXX check this
+            for i in (2,3):
+                vals = self.get_occurences(blk, i)
+                foo = {}
+                for val, coords in vals.items():
+                    foo.setdefault(tuple(coords), set()).add(val)
+
+                result = list(chain.from_iterable(
+                    values for key, values in foo.items() if len(values) > 1))
+
+                for val in coords:
+                    if len(result) != 0:
+                        #print("Going to set {val} to {key}".format(val=result, key=val))
+                        self.answers[val] = result
+
+
     # find answers that occur twice in 2 cells within a block
     # remove those answers from all other cells
     # XXX: Needs Development
     ############################################################################
     def del_value_options(self):
-        for i in range(9):
+        for blk in range(9):
             #print("Block:", i)
-            vals = self.get_occurences(i, 2)
+            # XXX check this
+            for i in (2,3):
+                vals = self.get_occurences(blk, i)
 
-            # find row/col in block
+                # find row/col in block
 
-            # get coordinates from self.answers
-            # that are on same row/col
-            # if coord in self.answers is not
-            # in vals then remove the value from coord
+                # get coordinates from self.answers
+                # that are on same row/col
+                # if coord in self.answers is not
+                # in vals then remove the value from coord
 
-            #self.pp.pprint(vals)
-            for f_val, f_coord in vals.items():
-                # get row x to analyze
-                x = list(set(i[0] for i in f_coord))
-                # get column y to analyze
-                y = list(set(i[1] for i in f_coord))
+                #self.pp.pprint(vals)
+                for f_val, f_coord in vals.items():
+                    # get row x to analyze
+                    x = list(set(i[0] for i in f_coord))
+                    # get column y to analyze
+                    y = list(set(i[1] for i in f_coord))
 
-                # this will check how many rows f_val might be on
-                # we're only interested when value f_val is found on 1 row
-                if len(x) == 1:
-                    #print("We need to remove {val} from row {x}".format(val=f_val, x=x))
+                    # this will check how many rows f_val might be on
+                    # we're only interested when value f_val is found on 1 row
+                    if len(x) == 1:
+                        #print("We need to remove {val} from row {x}".format(val=f_val, x=x))
 
-                    empty_row_coords = set(self.get_row_coords(x[0]))
-                    #print("COORDS in row {x}: {c}".format(x=x[0], c=empty_row_coords))
-                    coords = empty_row_coords.difference(set(f_coord))
-                    #print("COORDS TO CHECK", coords)
+                        empty_row_coords = set(self.get_row_coords(x[0]))
+                        #print("COORDS in row {x}: {c}".format(x=x[0], c=empty_row_coords))
+                        coords = empty_row_coords.difference(set(f_coord))
+                        #print("COORDS TO CHECK", coords)
 
-                    for coord in coords:
-                        if f_val in self.answers[coord]:
-                            #print("Checking coord:", coord)
-                            self.answers[coord].remove(f_val)
-                            self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
+                        for coord in coords:
+                            if f_val in self.answers[coord]:
+                                #print("Checking coord:", coord)
+                                self.answers[coord].remove(f_val)
+                                self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
 
-                elif len(y) == 1:
-                    #print("We need to remove {val} from column {y}".format(val=f_val, y=y))
-                    empty_col_coords = set(self.get_col_coords(y[0]))
-                    #print("COORDS in col {y}: {c}".format(y=y[0], c=empty_col_coords))
-                    coords = empty_col_coords.difference(set(f_coord))
-                    #print("COORDS TO CHECK", coords)
-                    for coord in coords:
-                        if f_val in self.answers[coord]:
-                            #print("Checking coord:", coord)
-                            self.answers[coord].remove(f_val)
-                            self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
+                    elif len(y) == 1:
+                        #print("We need to remove {val} from column {y}".format(val=f_val, y=y))
+                        empty_col_coords = set(self.get_col_coords(y[0]))
+                        #print("COORDS in col {y}: {c}".format(y=y[0], c=empty_col_coords))
+                        coords = empty_col_coords.difference(set(f_coord))
+                        #print("COORDS TO CHECK", coords)
+                        for coord in coords:
+                            if f_val in self.answers[coord]:
+                                #print("Checking coord:", coord)
+                                self.answers[coord].remove(f_val)
+                                self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
 
-        print("\n")
+        #print("\n")
 
 
     def get_row_coords(self, n):
@@ -253,7 +282,8 @@ class SudokuSolver:
 
         for x, row in enumerate(self.puzzle):
             for y, val in enumerate(row):
-                if val is None:
+                #if val is None:
+                if val == 0:
                     coord = (x, y)
                     block_n = (3 * (x // 3)) + (y // 3)
                     self.answers[coord] = self.get_cell_values(self.get_row(x),
@@ -266,6 +296,8 @@ class SudokuSolver:
         # within the block, eliminate the possibility that it
         # occurs on a different block on the same row/col
         self.del_value_options()
+
+        #self.get_definite_values()
 
         # read each block, look at all the potential answers
         # within the block and find single occurance answers
@@ -282,7 +314,8 @@ class SudokuSolver:
     # blank spaces
     def is_solved(self):
         for row in self.puzzle:
-            if None in row:
+            #if None in row:
+            if 0 in row:
                 return False
 
         self.log.info("Puzzle Solved!")
@@ -310,9 +343,11 @@ class SudokuSolver:
                 self.pp.pprint(self.answers)
                 print("\n")
                 self.log.warning("I'm stuck!")
+                print("\n")
 
                 return
 
+            #self.get_definite_values()
             for coord, vals in known.items():
                 self.puzzle[coord[0]][coord[1]] = vals[0]
 
@@ -321,88 +356,36 @@ class SudokuSolver:
 
 
 if __name__ == '__main__':
-    #test = [
-    #    [11, 12, 13, 14, 15, 16, 17, 18, 19],
-    #    [21, 22, 23, 24, 25, 26, 27, 28, 29],
-    #    [31, 32, 33, 34, 35, 36, 37, 38, 39],
-    #    [41, 42, 43, 44, 45, 46, 47, 48, 49],
-    #    [51, 52, 53, 54, 55, 56, 57, 58, 59],
-    #    [61, 62, 63, 64, 65, 66, 67, 68, 69],
-    #    [71, 72, 73, 74, 75, 76, 77, 78, 79],
-    #    [81, 82, 83, 84, 85, 86, 87, 88, 89],
-    #    [91, 92, 93, 94, 95, 96, 97, 98, 99],
-    #]
-    #unsolved = [
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None, None, None, None, None, None, None, None, None]
-    #]
-    # Level: Easy
-    # Solved!
-    #unsolved = [
-    #    [   3, None, None,    1, None,    7, None, None, None],
-    #    [   7, None, None, None,    9, None, None, None, None],
-    #    [None, None,    1, None,    8,    6,    7, None, None],
-    #    [   1, None, None,    5, None, None, None,    8,    7],
-    #    [None, None,    3, None,    4, None,    6, None, None],
-    #    [   8,    6, None, None, None,    2, None, None,    5],
-    #    [None, None,    2,    4,    3, None,    5, None, None],
-    #    [None, None, None, None,    1, None, None, None,    2],
-    #    [None, None, None,    6, None,    9, None, None,    1],
-    #]
-    # Level: Hard
-    # cannot solve
-    #unsolved = [
-    #    [None, None, None, None, None, None,    1, None,    2],
-    #    [None,    5, None,    8,    4, None, None, None,    3],
-    #    [   9, None, None,    7,    3, None, None,    8, None],
-    #    [None,    6, None, None,    7, None,    9,    3, None],
-    #    [None, None, None, None, None, None, None, None, None],
-    #    [None,    7,    9, None,    8, None, None,    4, None],
-    #    [None,    9, None, None,    5,    3, None, None,    8],
-    #    [   5, None, None, None,    9,    8, None,    6, None],
-    #    [   3, None,    8, None, None, None, None, None, None]
-    #]
-    # Level: Evil
-    # Cannot solve
-    unsolved = [
-        [None, None,    3, None, None, None, None, None,    6],
-        [   2,    8, None, None, None,    6, None, None,    3],
-        [None, None,    6,    9, None, None, None,    1, None],
-        [None, None, None,    4, None,    2, None, None, None],
-        [None,    7,    9, None, None, None,    1,    3, None],
-        [None, None, None,    7, None,    9, None, None, None],
-        [None,    5, None, None, None,    7,    3, None, None],
-        [   3, None, None,    6, None, None, None,    5,    9],
-        [   1, None, None, None, None, None,    8, None, None]
-    ]
-    # Level: Intermediate (From DS)
-    # Solved!
-    #unsolved = [
-    #    [   4, None, None, None, None, None, None,    1,    8],
-    #    [None, None, None,    1, None, None, None, None,    3],
-    #    [None, None,    2,    4,    6, None, None, None, None],
-    #    [None,    3,    5,    7, None, None, None, None, None],
-    #    [None, None,    8, None, None, None,    6, None, None],
-    #    [None, None, None, None, None,    4,    8,    2, None],
-    #    [None, None, None, None,    1,    5,    7, None, None],
-    #    [   6, None, None, None, None,    3, None, None, None],
-    #    [   7,    5, None, None, None, None, None, None,    2]
-    #]
-
-
     pp = pprint.PrettyPrinter(indent=2)
+    #testcases = open('/Users/ltan/git/sudoku/test.txt', 'r')
+    testcases = open('/Users/ltan/git/sudoku/1puzzle.txt', 'r')
 
-    solver = SudokuSolver(unsolved)
-    solver.print_puzzle()
+    for i, row in enumerate(testcases):
+        if i % 10 == 0:
+            puzzle = []
+        else:
+            cells = row.rstrip().split(',')
+            puzzle.append(list(map(int, cells)))
 
-    solver.solve()
-    solver.print_puzzle()
-    #pp.pprint(solver.get_row_coords(1))
-    #solver.get_col_coords(3)
+        if i % 10 == 9:
+            solver = SudokuSolver(puzzle)
+            solver.solve()
+            solver.print_puzzle()
+
+    testcases.close()
+
+
+    #pp = pprint.PrettyPrinter(indent=2)
+
+    #solver = SudokuSolver(unsolved)
+    #solver.print_puzzle()
+
+    #solver.solve()
+    #solver.print_puzzle()
+    ## XXX it somehow messed up (4,4) = 6
+    #for coord in solver.get_block_coords(4):
+    #    if coord in solver.answers.keys():
+    #        print(coord, solver.answers[coord])
+    ##solver.get_definite_values()
+    ##pp.pprint(solver.get_row_coords(1))
+    ##solver.get_col_coords(3)
