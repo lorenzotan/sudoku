@@ -3,6 +3,13 @@ import pprint
 import re
 from itertools import chain
 
+"""
+TO DO:
+Check blocks where number only appears once
+Check rows where number only appears once
+Check cols where number only appears once
+"""
+
 class SudokuSolver:
     # class attribute
     complete = (1,2,3,4,5,6,7,8,9)
@@ -85,20 +92,21 @@ class SudokuSolver:
 
 
     #
-    # Return a List of possible values for an empty cell
+    # Return a List of all possible values for an empty cell
     # using a Sudoku row, column and block
     #
     # Input:  row:   List<Int>
     #         col:   List<Int>
     #         block: List<Int>
     # Output: List<Int>
-    def get_cell_values(self, row, col, block):
+    def get_empty_cell_values(self, row, col, block):
         return self.get_missing_values(set([*row, *col, *block]))
 
 
     # find answers that occur twice within a block
     # if there are 2 that have 2 of the same coordinates
     # eliminate all other possible answers
+    # XXX bug
     def get_definite_values(self):
         # we are scanning each block for
         # 2 numbers that have been narrowed down to the same
@@ -115,9 +123,9 @@ class SudokuSolver:
                 result = list(chain.from_iterable(
                     values for key, values in foo.items() if len(values) > 1))
 
-                for val in coords:
+                for val in coords:#self.get_block_coords(blk):
                     if len(result) != 0:
-                        #print("Going to set {val} to {key}".format(val=result, key=val))
+                        print("Going to set {val} to {key}".format(val=result, key=val))
                         self.answers[val] = result
 
 
@@ -129,52 +137,64 @@ class SudokuSolver:
         for blk in range(9):
             #print("Block:", i)
             # XXX check this
-            for i in (2,3):
-                vals = self.get_occurences(blk, i)
+            #for i in (2,3):
+            i = 2
+            vals = self.get_occurences(blk, i)
 
-                # find row/col in block
+            # find row/col in block
 
-                # get coordinates from self.answers
-                # that are on same row/col
-                # if coord in self.answers is not
-                # in vals then remove the value from coord
+            # get coordinates from self.answers
+            # that are on same row/col
+            # if coord in self.answers is not
+            # in vals then remove the value from coord
 
-                #self.pp.pprint(vals)
-                for f_val, f_coord in vals.items():
-                    # get row x to analyze
-                    x = list(set(i[0] for i in f_coord))
-                    # get column y to analyze
-                    y = list(set(i[1] for i in f_coord))
+            #self.pp.pprint(vals)
+            for f_val, f_coord in vals.items():
+                # get row x to analyze
+                x = list(set(i[0] for i in f_coord))
+                # get column y to analyze
+                y = list(set(i[1] for i in f_coord))
 
-                    # this will check how many rows f_val might be on
-                    # we're only interested when value f_val is found on 1 row
-                    if len(x) == 1:
-                        #print("We need to remove {val} from row {x}".format(val=f_val, x=x))
+                # this will check how many rows f_val might be on
+                # we're only interested when value f_val is found on 1 row
+                if len(x) == 1:
+                    #print("We need to remove {val} from row {x}".format(val=f_val, x=x))
 
-                        empty_row_coords = set(self.get_row_coords(x[0]))
-                        #print("COORDS in row {x}: {c}".format(x=x[0], c=empty_row_coords))
-                        coords = empty_row_coords.difference(set(f_coord))
-                        #print("COORDS TO CHECK", coords)
+                    empty_row_coords = set(self.get_row_coords(x[0]))
+                    #print("COORDS in row {x}: {c}".format(x=x[0], c=empty_row_coords))
+                    coords = empty_row_coords.difference(set(f_coord))
+                    #print("COORDS TO CHECK", coords)
 
-                        for coord in coords:
-                            if f_val in self.answers[coord]:
-                                #print("Checking coord:", coord)
-                                self.answers[coord].remove(f_val)
-                                self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
+                    for coord in coords:
+                        if f_val in self.answers[coord]:
+                            #print("Checking coord:", coord)
+                            self.answers[coord].remove(f_val)
+                            self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
 
-                    elif len(y) == 1:
-                        #print("We need to remove {val} from column {y}".format(val=f_val, y=y))
-                        empty_col_coords = set(self.get_col_coords(y[0]))
-                        #print("COORDS in col {y}: {c}".format(y=y[0], c=empty_col_coords))
-                        coords = empty_col_coords.difference(set(f_coord))
-                        #print("COORDS TO CHECK", coords)
-                        for coord in coords:
-                            if f_val in self.answers[coord]:
-                                #print("Checking coord:", coord)
-                                self.answers[coord].remove(f_val)
-                                self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
+                elif len(y) == 1:
+                    #print("We need to remove {val} from column {y}".format(val=f_val, y=y))
+                    empty_col_coords = set(self.get_col_coords(y[0]))
+                    #print("COORDS in col {y}: {c}".format(y=y[0], c=empty_col_coords))
+                    coords = empty_col_coords.difference(set(f_coord))
+                    #print("COORDS TO CHECK", coords)
+                    for coord in coords:
+                        if f_val in self.answers[coord]:
+                            #print("Checking coord:", coord)
+                            self.answers[coord].remove(f_val)
+                            self.log.info("Removing {val} from cell {coord}".format(val=f_val, coord=coord))
 
         #print("\n")
+
+
+    #def rm_(self, empty_coords, filtered_coord, filtered_val):
+    #    coords = empty_coords.difference(set(filtered_coord))
+    #    #print("COORDS TO CHECK", coords)
+    #    for coord in coords:
+    #        if filtered_val in self.answers[coord]:
+    #            #print("Checking coord:", coord)
+    #            self.answers[coord].remove(filtered_val)
+    #            self.log.info("Removing {val} from cell {coord}".format(val=filtered_val, coord=coord))
+
 
 
     def get_row_coords(self, n):
@@ -194,7 +214,7 @@ class SudokuSolver:
 
         # coordinates of unsolved cells in block blk
         coords = list(filter(lambda i: i in self.answers.keys(),
-                           self.get_block_coords(blk)))
+                      self.get_block_coords(blk)))
 
         for coord in coords:
             for val in self.answers[coord]:
@@ -204,7 +224,7 @@ class SudokuSolver:
                     ans[val] = [coord]
 
         filtered = dict(filter(lambda val: len(val[1]) == n,
-                    ans.items()))
+                        ans.items()))
 
         # we only care about values that exist on the same row/col
         for val, coord in filtered.items():
@@ -282,13 +302,12 @@ class SudokuSolver:
 
         for x, row in enumerate(self.puzzle):
             for y, val in enumerate(row):
-                #if val is None:
                 if val == 0:
                     coord = (x, y)
                     block_n = (3 * (x // 3)) + (y // 3)
-                    self.answers[coord] = self.get_cell_values(self.get_row(x),
-                                                           self.get_column(y),
-                                                           self.get_block(block_n))
+                    self.answers[coord] = self.get_empty_cell_values(self.get_row(x),
+                                                                     self.get_column(y),
+                                                                     self.get_block(block_n))
 
         # narrow down answers in the cells
         # find cells within a block that only occur twice
@@ -297,7 +316,7 @@ class SudokuSolver:
         # occurs on a different block on the same row/col
         self.del_value_options()
 
-        #self.get_definite_values()
+        self.get_definite_values()
 
         # read each block, look at all the potential answers
         # within the block and find single occurance answers
@@ -306,15 +325,12 @@ class SudokuSolver:
 
 
     #
-    # Read in puzzle
+    # Returns True if all cells in the puzzle are !0
     #
     # Input:  puzzle 9x9 Matrix<Int>
     # Output: <Boolean>
-    # XXX rename this. it checks if there are anymore
-    # blank spaces
     def is_solved(self):
         for row in self.puzzle:
-            #if None in row:
             if 0 in row:
                 return False
 
@@ -330,11 +346,13 @@ class SudokuSolver:
     def solve(self):
         while(not self.is_solved()):
             self.set_answers()
+
             # ans[0] is the key of self.answers
             # ans[1] is the value of self.answers
             known = dict( filter(lambda ans: len(ans[1]) == 1,
                                  self.answers.items()) )
             wrong = dict( filter(lambda ans: len(ans[1]) == 0, self.answers.items()) )
+
             if len(wrong.keys()) > 0:
                 self.log.error("We made a mistake!")
                 self.pp.pprint(self.answers)
@@ -357,8 +375,8 @@ class SudokuSolver:
 
 if __name__ == '__main__':
     pp = pprint.PrettyPrinter(indent=2)
-    #testcases = open('/Users/ltan/git/sudoku/test.txt', 'r')
-    testcases = open('/Users/ltan/git/sudoku/1puzzle.txt', 'r')
+    #testcases = open('samples/test.txt', 'r')
+    testcases = open('samples/1puzzle.txt', 'r')
 
     for i, row in enumerate(testcases):
         if i % 10 == 0:
