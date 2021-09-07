@@ -123,7 +123,7 @@ class SudokuSolver:
                 result = list(chain.from_iterable(
                     values for key, values in foo.items() if len(values) > 1))
 
-                for val in coords:#self.get_block_coords(blk):
+                for val in self.get_block_coords(blk):
                     if len(result) != 0:
                         print("Going to set {val} to {key}".format(val=result, key=val))
                         self.answers[val] = result
